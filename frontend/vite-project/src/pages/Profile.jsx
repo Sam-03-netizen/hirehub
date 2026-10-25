@@ -17,7 +17,7 @@ export default function Profile() {
       name: user.name, headline: user.headline || '', location: user.location || '',
       bio: user.bio || '', company: user.company || '', skills: (user.skills || []).join(', '),
     });
-  }, [user]);
+  }, [user._id]);
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
