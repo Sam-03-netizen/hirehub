@@ -23,7 +23,7 @@ export default function Jobs() {
   return (
     <>
       <section className="hero">
-        <h1>Find work that fits the way you want to live.</h1>
+        <h1>Find work that fits <span className="hero-italic">the way you want to live.</span></h1>
         <p className="muted">Browse openings, apply with your resume, and get notified the moment a recruiter responds.</p>
         <div className="filters">
           <input placeholder="Job title, company or skill" value={filters.search} onChange={set('search')} />

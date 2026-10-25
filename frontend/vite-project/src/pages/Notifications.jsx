@@ -12,7 +12,7 @@ export default function Notifications() {
     <div className="narrow">
       <div className="row-between">
         <h1>Notifications</h1>
-        {unread > 0 && <button className="btn btn-ghost btn-sm" onClick={() => dispatch(markAllRead())}>Mark all as read</button>}
+        <button className="btn btn-ghost btn-sm" onClick={() => dispatch(markAllRead())} disabled={unread === 0}>Mark all as read</button>
       </div>
       {items.length === 0 ? (
         <div className="empty"><h3>Nothing yet</h3><p className="muted">Updates about applications will show up here instantly.</p></div>
