@@ -1,23 +1,21 @@
 import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
-import { parse } from 'cookie';
 
 let io;
 
 // Every logged-in user joins a private room named after their user id.
-// The JWT is read from the same httpOnly cookie used by the REST API.
+// A short-lived, purpose-scoped token authenticates the socket handshake.
 export const initSocket = (server, origins) => {
   io = new Server(server, { cors: { origin: origins, credentials: true } });
 
   io.use((socket, next) => {
     try {
-      const cookies = parse(socket.handshake.headers.cookie || '');
-      if (!cookies.token) return next(new Error('Not authenticated'));
-      const { id } = jwt.verify(cookies.token, process.env.JWT_SECRET);
+      const { id, purpose } = jwt.verify(socket.handshake.auth?.token || '', process.env.JWT_SECRET);
+      if (purpose !== 'socket') throw new Error('Wrong token type');
       socket.userId = id;
       next();
     } catch {
-      next(new Error('Invalid token'));
+      next(new Error('Not authenticated'));
     }
   });
 

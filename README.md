@@ -1,5 +1,15 @@
 # HireHub - Real-Time Job Portal (MERN)
 
+## Problem Statement
+Job applications are a black box. Candidates apply and hear nothing for days, while recruiters have no quick way to know a new applicant has arrived and track decisions across scattered inboxes.
+
+## Target Users
+- **Candidates:** students and early-career job seekers who want to apply with one profile and resume and know instantly when a recruiter acts.
+- **Recruiters:** hiring managers at small companies who want one place to post jobs, review applicants, and update decisions.
+
+## Solution
+HireHub gives both sides one workflow with live feedback. Recruiters post jobs, candidates apply with a stored resume, the recruiter is notified instantly over WebSockets, and when the recruiter shortlists or rejects, the candidate's tracker updates live without a refresh.
+
 HireHub is a full-stack job portal where **recruiters** post jobs and manage applicants, and **candidates** search for jobs, apply with a resume, and track their applications. Both sides receive **real-time notifications** over Socket.IO: a recruiter is alerted the moment someone applies, and a candidate is alerted the moment their application status changes.
 
 - **Demo video:** _add your Vercel URL here_
@@ -64,14 +74,14 @@ HireHub is a full-stack job portal where **recruiters** post jobs and manage app
 ## Architecture
 
 ```
-React (Vite) + Redux  <----HTTP (cookie)---->  Express API  <---->  MongoDB Atlas
+React (Vite) + Redux  <----HTTP (cookie)---->  Vercel /api proxy  <---->  Express API  <---->  MongoDB Atlas
         ^                                          |
         |                                          +--> Cloudinary (avatars, resumes)
-        +-------- Socket.IO (cookie auth) --------+
+        +-------- Socket.IO (short-lived token auth) --------+
 ```
 
-1. The browser sends the JWT cookie automatically with every API call (`withCredentials: true`).
-2. When a user logs in, the frontend opens a Socket.IO connection. The server verifies the same cookie and puts the socket in a private room named after the user id.
+1. REST calls go through Vercel's `/api` proxy so the cookie stays first-party. The browser sends the httpOnly JWT cookie with every API call (`withCredentials: true`).
+2. When a user logs in, the frontend requests a short-lived socket token over the authenticated REST API, then opens a Socket.IO connection. The server verifies its signature and `socket` purpose, then puts the socket in a private room named after the user id.
 3. When something happens (new application, status change), the controller saves a `Notification` in MongoDB and emits it to that user's room.
 4. The frontend listens for the `notification` event, adds it to Redux, shows a toast, and updates the bell count.
 
@@ -153,6 +163,7 @@ All routes are prefixed with `/api`. "Auth" means the JWT cookie is required.
 | POST | `/auth/login` | Public | Log in, sets httpOnly cookie |
 | POST | `/auth/logout` | Public | Clears cookie |
 | GET | `/auth/me` | Auth | Current user (used to restore session) |
+| GET | `/auth/socket-token` | Auth | Short-lived token for Socket.IO authentication |
 | PUT | `/users/profile` | Auth | Update profile fields |
 | POST | `/users/avatar` | Auth | Upload profile photo (`avatar` file) |
 | POST | `/users/resume` | Candidate | Upload resume (`resume` file, PDF/DOC/DOCX, max 5 MB) |
@@ -176,14 +187,15 @@ All routes are prefixed with `/api`. "Auth" means the JWT cookie is required.
 |---|---|---|
 | `notification` | server to one user's room | New application (to recruiter) or status change (to candidate) |
 
-The socket handshake reads the `token` cookie, verifies the JWT, and joins the room `userId`. If the cookie is missing or invalid, the connection is rejected.
+The socket handshake verifies the short-lived token supplied in Socket.IO auth data and joins the room `userId`. Tokens must have the `socket` purpose; missing, invalid, or wrong-purpose tokens are rejected.
 
 ## Authentication Flow
 
 1. `POST /auth/login` verifies the password with bcrypt and sets a JWT (7 days) in an `httpOnly` cookie.
 2. On page load the frontend calls `GET /auth/me`; if the cookie is valid, the user is restored in Redux.
-3. The `protect` middleware reads the cookie and loads the user; `authorize('recruiter')` restricts by role.
-4. Cookie settings: in development `SameSite=Lax`; in production `SameSite=None; Secure` because the frontend and backend live on different domains.
+3. Before connecting Socket.IO, the frontend calls `GET /auth/socket-token` and receives a purpose-scoped JWT that expires in two minutes.
+4. The `protect` middleware reads the cookie and loads the user; `authorize('recruiter')` restricts by role.
+5. Cookie settings: in development `SameSite=Lax`; in production the Vercel `/api` proxy keeps REST cookies first-party.
 
 ## Deployment
 
