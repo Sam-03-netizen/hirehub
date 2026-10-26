@@ -12,7 +12,7 @@ HireHub gives both sides one workflow with live feedback. Recruiters post jobs, 
 
 HireHub is a full-stack job portal where **recruiters** post jobs and manage applicants, and **candidates** search for jobs, apply with a resume, and track their applications. Both sides receive **real-time notifications** over Socket.IO: a recruiter is alerted the moment someone applies, and a candidate is alerted the moment their application status changes.
 
-- **Demo video:** _add your Vercel URL here_
+- **Demo video:** https://drive.google.com/file/d/1oTNIMGdpRfE3uBCPhcQpcP6zf1McK2-U/view?usp=sharing
 
 ---
 
